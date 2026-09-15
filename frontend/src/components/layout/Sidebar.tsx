@@ -1,5 +1,6 @@
 import {
   Bars3Icon,
+  BookOpenIcon,
   CalendarDaysIcon,
   ClipboardDocumentListIcon,
   HomeIcon,
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/projects', label: 'Projects', icon: Squares2X2Icon },
   { to: '/calendar', label: 'Calendar', icon: CalendarDaysIcon },
   { to: '/explore', label: 'Map / Explore', icon: MapIcon },
+  { to: '/help', label: 'User guide', icon: BookOpenIcon },
 ]
 
 export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {

@@ -5,6 +5,7 @@ import { CalendarPage } from './pages/CalendarPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ExplorePage } from './pages/ExplorePage'
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
+import { HelpPage } from './pages/HelpPage'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
 import { ResetPasswordPage } from './pages/auth/ResetPasswordPage'
@@ -39,6 +40,7 @@ function App() {
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="explore" element={<ExplorePage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="help" element={<HelpPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="search" element={<SearchPage />} />
         <Route path="tasks/:taskId" element={<TaskRedirectPage />} />
