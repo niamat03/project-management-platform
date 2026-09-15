@@ -4,6 +4,78 @@ A full-stack, real-time project management platform (Trello/Asana-inspired) with
 geospatial dimension: projects and tasks can be located on a map, queried spatially
 ("tasks near me"), and analyzed territorially — powered by PostGIS, not a decorative Leaflet map.
 
+## Features
+
+**Accounts & profiles**
+- Register / login / logout with JWT (access + refresh, auto-refreshed on 401), password
+  change and reset-by-email flow.
+- Editable profile: name, username, email, avatar, bio, job title.
+
+**Projects & teams**
+- Create projects with description, status (planning/active/on hold/completed/archived),
+  priority (low/medium/high/critical), start/end dates, and an optional map location.
+- Invite members with a role — owner / admin / manager / member / viewer — each permission
+  (edit project, manage board, assign tasks, manage members, ...) enforced server-side from
+  the caller's actual `ProjectMember` row, never from anything the client sends.
+- Per-project Overview, Board, List, Calendar, Map, Activity, Members, and Settings tabs.
+
+**Boards & tasks**
+- Kanban board with drag-and-drop columns (Backlog → To Do → In Progress → Review → Done by
+  default, fully customizable) using `@dnd-kit`, with float-based positions so reordering
+  never needs to renumber a whole column.
+- Task cards: title, description, priority, status, start/due dates, completion date,
+  estimated/actual hours, progress, parent task (subtasks), tags, file attachments.
+- Multi-assignee support via a proper many-to-many (`TaskAssignee`), with assign/reassign/
+  unassign always re-validated against project membership and caller permissions.
+- Task detail modal: full edit surface, comment thread, activity timeline, and an optional
+  mini-map when the task has a location.
+- List view (sortable/filterable table) and month Calendar view (by start/due date) as
+  alternatives to the board; CSV export of the current task list.
+- Bulk actions (multi-select status/assignee/priority updates) and a tag picker scoped to
+  the project.
+
+**Collaboration**
+- Threaded comments per task — add / edit own / delete (author or admin+) — with
+  `@username` mention detection that fires a notification.
+- Full activity timeline per project/task ("Sarah created this task", "Maria moved the task
+  to In Progress", ...), used as the audit trail.
+- Notifications (assignment, reassignment, new comment, mention, project invite, status
+  change, deadline reminders) with an unread badge, panel, and mark-as-read/mark-all-read.
+
+**Real-time**
+- Django Channels/WebSockets over project-scoped groups: task create/update/move,
+  assignment, comment, membership, and notification events are pushed live to every
+  connected member without a page refresh, and connections are re-authorized against the
+  database on connect (never trusted from the URL alone).
+
+**Geospatial**
+- Projects and tasks can optionally carry a PostGIS geometry (point / line / polygon /
+  multipolygon) via a shared `SpatialMixin`, with a `location_visibility` setting
+  (public / project members / private-to-admins) enforced everywhere the geometry is
+  serialized, REST and WebSocket alike.
+- Interactive Leaflet map (global Explore view and per-project Map tab) with clustering,
+  popups, and click-to-open-task integration.
+- "Tasks near me": opt-in browser geolocation → PostGIS `ST_DWithin`/`ST_Distance` search
+  within a capped radius, returning real distances — never computed client-side.
+
+**Dashboard & search**
+- Global dashboard: my projects, assigned tasks, due-today/overdue/upcoming, recent
+  activity, and project/task statistics.
+- Per-project dashboard: progress, status/priority distribution, team, deadlines.
+- Global search across projects, tasks, and users, plus server-side task filtering
+  (status, priority, assignee, due date, project, overdue).
+
+## Technologies
+
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query,
+  React-Leaflet + Leaflet, `@dnd-kit` (drag-and-drop), Recharts, Axios.
+- **Backend**: Python, Django, Django REST Framework, Simple JWT, Django Channels
+  (Daphne/ASGI), django-filter, GeoDjango.
+- **Database**: PostgreSQL + PostGIS (geography-typed geometry columns for accurate
+  real-world distance queries, GiST-indexed).
+- **Real-time transport**: WebSockets via Django Channels, in-memory channel layer for
+  local dev and Redis (`channels_redis`) for multi-process/production setups.
+
 ## Architecture
 
 ```
@@ -18,13 +90,6 @@ Business / Permission / Spatial services (per-app)
         ▼
 PostgreSQL + PostGIS
 ```
-
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query,
-  React-Leaflet, @dnd-kit (Kanban drag-and-drop), Recharts.
-- **Backend**: Django, Django REST Framework, Simple JWT, Django Channels (Daphne/ASGI),
-  django-filter, GeoDjango.
-- **Database**: PostgreSQL + PostGIS (geography-typed geometry columns for accurate
-  real-world distance queries).
 
 ## Project structure
 
@@ -153,19 +218,3 @@ visibility rules), and WebSocket authorization (anonymous/non-member connections
    PostGIS `ST_DWithin`/`ST_Distance`, with real distances.
 6. Open the same project board in two browser windows and move a task in one — it updates
    in the other via WebSocket without a refresh.
-
-## Security notes
-
-- All authorization (project role, task project membership, comment ownership, WebSocket
-  group membership) is re-verified server-side on every request/connection.
-- JWT access/refresh tokens (Simple JWT), with automatic refresh on 401 in the frontend
-  API client.
-- A user's live location is never requested or stored automatically — only on explicit
-  "Tasks near me" clicks, and project/task locations have a visibility setting
-  (public / members-only / private) enforced when serializing map features.
-- Password hashing uses a tuned PBKDF2 iteration count (`config/hashers.py`, 400k instead
-  of Django's stock 1.5M) — the stock default measured ~4.5s per check on typical dev
-  hardware, which is a genuine usability problem for login/registration, not just a test
-  nicety. 400k still comfortably clears OWASP's current PBKDF2-SHA256 guidance. Existing
-  hashes keep verifying against the stock hasher (still listed, as a fallback) and are
-  transparently upgraded to the faster one on next successful login.
