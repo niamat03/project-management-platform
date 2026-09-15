@@ -22,7 +22,11 @@ MENTION_RE = re.compile(r'@(\w+)')
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Comment threads are rendered in full (no pagination UI in the task
+    detail panel), so disable the global paginator - matching TagViewSet's
+    same reasoning for a small, complete list."""
     serializer_class = CommentSerializer
+    pagination_class = None
 
     def get_task(self):
         return get_object_or_404(
